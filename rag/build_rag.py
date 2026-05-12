@@ -1,17 +1,16 @@
 # ============================================================
 # Nexify - RAG Pipeline Builder
-# Converts our knowledge documents into AI-searchable format
+# Using Groq (FREE) + Local Embeddings (FREE)
 # ============================================================
 
 import os
 from pathlib import Path
-
-# LangChain components for RAG
 from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import MarkdownTextSplitter
-from langchain.schema import Document
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_text_splitters import MarkdownTextSplitter
+from langchain_core.documents import Document
 from dotenv import load_dotenv
+
 
 # Load environment variables (API keys)
 load_dotenv()
@@ -35,12 +34,12 @@ def load_knowledge_documents():
         # Read the file content
         content = file_path.read_text(encoding='utf-8')
         
-        # Create a Document object with content and metadata
+        # Create a Document object
         doc = Document(
             page_content=content,
             metadata={
-                'source': file_path.name,      # filename
-                'topic': file_path.stem,        # filename without extension
+                'source': file_path.name,
+                'topic': file_path.stem,
             }
         )
         
@@ -56,16 +55,12 @@ def load_knowledge_documents():
 def split_documents(documents):
     """
     Split large documents into smaller chunks.
-    Why? AI works better with focused, small pieces of text.
-    Think of it like highlighting specific paragraphs 
-    instead of reading the whole book.
+    AI works better with small focused pieces of text.
     """
     
     splitter = MarkdownTextSplitter(
-        chunk_size=500,      # each chunk = max 500 characters
-        chunk_overlap=50     # 50 char overlap between chunks
-                             # overlap prevents losing context
-                             # at chunk boundaries
+        chunk_size=500,    # max 500 characters per chunk
+        chunk_overlap=50   # 50 char overlap to keep context
     )
     
     chunks = splitter.split_documents(documents)
@@ -74,31 +69,38 @@ def split_documents(documents):
     return chunks
 
 # ============================================================
-# 3. CREATE VECTOR STORE
+# 3. CREATE VECTOR STORE (FREE Local Embeddings)
 # ============================================================
 
 def build_vector_store(chunks):
     """
-    Convert text chunks into numbers (embeddings) 
+    Convert text chunks into numbers (embeddings)
     and store in ChromaDB.
     
-    Embeddings = mathematical representation of text meaning.
-    Similar meanings = similar numbers = easy to find!
+    We use HuggingFace embeddings — completely FREE!
+    Runs locally on your computer — no API needed!
     """
     
-    print("\nCreating embeddings and building vector store...")
-    print("(This may take a minute...)")
+    print("\nLoading embedding model...")
+    print("(First time downloads ~90MB — please wait...)")
     
-    # OpenAI's embedding model converts text to numbers
-    embeddings = OpenAIEmbeddings(
-        model='text-embedding-3-small'  # cheap and very accurate
+    # This runs completely on your computer — FREE!
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2",
+        # Small but powerful model
+        # Perfect for our use case
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs={'normalize_embeddings': True}
     )
     
-    # ChromaDB stores these numbers for fast searching
+    print("✅ Embedding model loaded!")
+    print("\nBuilding vector store...")
+    
+    # Store embeddings in ChromaDB
     vector_store = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
-        persist_directory='rag/chroma_db'  # save to disk
+        persist_directory='rag/chroma_db'
     )
     
     print("✅ Vector store built and saved!")
@@ -110,8 +112,7 @@ def build_vector_store(chunks):
 
 def test_rag(vector_store):
     """
-    Test that our RAG pipeline works correctly
-    by searching for some sample queries.
+    Test our RAG pipeline with sample queries.
     """
     
     print("\n" + "="*50)
@@ -132,7 +133,6 @@ def test_rag(vector_store):
         results = vector_store.similarity_search(query, k=1)
         
         if results:
-            # Show first 200 characters of result
             preview = results[0].page_content[:200]
             source = results[0].metadata['source']
             print(f"📌 Found in: {source}")
@@ -166,7 +166,7 @@ def build_rag_pipeline():
     print("\n" + "="*50)
     print("RAG PIPELINE COMPLETE!")
     print("="*50)
-    print("\nKnowledge base is ready for the AI copilot!")
+    print("\nKnowledge base is ready for AI copilot!")
 
 if __name__ == "__main__":
     build_rag_pipeline()
