@@ -1,0 +1,9 @@
+class_id,class_name,instructor,capacity,duration_mins,day,time
+C001,Yoga,Sarah Johnson,20,60,Monday,07:00
+C002,HIIT,Mike Peters,15,45,Monday,18:00
+C003,Pilates,Emma Davis,12,50,Tuesday,09:00
+C004,Spin,Tom Wilson,18,45,Wednesday,07:00
+C005,Zumba,Maria Garcia,25,60,Wednesday,18:00
+C006,Boxing,James Brown,10,60,Thursday,07:00
+C007,Meditation,Lisa Chen,20,30,Friday,08:00
+C008,CrossFit,Mike Peters,12,60,Saturday,09:00
